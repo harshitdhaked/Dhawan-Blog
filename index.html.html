@@ -1,0 +1,171 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Step Counter Pedometer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f8ff;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .pedometer-container {
+            text-align: center;
+            background: #fff;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            width: 350px;
+        }
+        h1 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        .step-count {
+            font-size: 48px;
+            font-weight: bold;
+            color: #007bff;
+            margin: 20px 0;
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            color: white;
+            background-color: #007bff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .status {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #555;
+        }
+        .history-section {
+            margin-top: 20px;
+            text-align: left;
+        }
+        .history-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .history-list {
+            max-height: 150px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 10px;
+            background-color: #f9f9f9;
+        }
+        .history-item {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="pedometer-container">
+        <h1>Step Counter</h1>
+        <div class="step-count" id="stepCount">0</div>
+        <button id="startButton">Start Tracking</button>
+        <div class="status" id="status">Waiting to start...</div>
+
+        <!-- History Section -->
+        <div class="history-section">
+            <div class="history-title">History</div>
+            <div class="history-list" id="historyList">
+                <!-- History items will be dynamically added here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let stepCount = 0;
+        let previousAcceleration = null;
+        let tracking = false;
+        const history = [];
+
+        // Function to handle accelerometer data
+        function handleMotion(event) {
+            if (!tracking) return;
+
+            const acceleration = event.accelerationIncludingGravity;
+            if (previousAcceleration === null) {
+                previousAcceleration = acceleration;
+                return;
+            }
+
+            // Calculate the difference in acceleration
+            const deltaX = Math.abs(acceleration.x - previousAcceleration.x);
+            const deltaY = Math.abs(acceleration.y - previousAcceleration.y);
+            const deltaZ = Math.abs(acceleration.z - previousAcceleration.z);
+
+            // Threshold to detect a step (adjust as needed)
+            const threshold = 10;
+            if (deltaX > threshold || deltaY > threshold || deltaZ > threshold) {
+                stepCount++;
+                document.getElementById('stepCount').textContent = stepCount;
+            }
+
+            previousAcceleration = acceleration;
+        }
+
+        // Add a step count entry to the history
+        function addToHistory(steps) {
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = `${timestamp} - ${steps} steps`;
+            history.push(entry);
+
+            // Update the history list in the UI
+            const historyList = document.getElementById('historyList');
+            const newItem = document.createElement('div');
+            newItem.className = 'history-item';
+            newItem.textContent = entry;
+            historyList.prepend(newItem); // Add new item at the top
+        }
+
+        // Start/Stop tracking steps
+        document.getElementById('startButton').addEventListener('click', () => {
+            if (tracking) {
+                tracking = false;
+                document.getElementById('startButton').textContent = 'Start Tracking';
+                document.getElementById('status').textContent = 'Tracking stopped.';
+                
+                // Save the current step count to history
+                addToHistory(stepCount);
+            } else {
+                tracking = true;
+                stepCount = 0; // Reset step count
+                document.getElementById('stepCount').textContent = stepCount;
+                document.getElementById('startButton').textContent = 'Stop Tracking';
+                document.getElementById('status').textContent = 'Tracking started...';
+
+                // Check for device motion support
+                if (window.DeviceMotionEvent) {
+                    window.addEventListener('devicemotion', handleMotion);
+                } else {
+                    alert('Device motion not supported on this device.');
+                    tracking = false;
+                    document.getElementById('startButton').textContent = 'Start Tracking';
+                    document.getElementById('status').textContent = 'Device motion not supported.';
+                }
+            }
+        });
+    </script>
+</body>
+</html>
+
